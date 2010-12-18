@@ -112,7 +112,7 @@ loglevel 3
 # mount mtd partitions
     # Mount /system rw first to give the filesystem a chance to save a checkpoint
     #mount yaffs2 mtd@system /system
-    mount rfs /dev/block/stl9 /system check=no
+    #mount rfs /dev/block/stl9 /system check=no
     #mount yaffs2 mtd@system /system ro remount
 
 # use movinand second partition as /data. d.moskvitin
@@ -311,7 +311,7 @@ on boot
 service console /system/bin/sh
     console
 
-service recovery /system/bin/recovery
+service recovery /sbin/recovery
     oneshot
 
 # adbd is controlled by the persist.service.adb.enable system property
