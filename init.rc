@@ -172,9 +172,6 @@ loglevel 3
 
     mount rfs /dev/block/stl3 /efs nosuid nodev check=no
 
-    mkdir /data/etc
-    chmod 0666 /data/etc
-	
     #chown system system /efs
     chown radio radio /efs
     chmod 0771 /efs
@@ -410,17 +407,6 @@ on boot
     setprop net.tcp.buffersize.edge    4093,26280,35040,4096,16384,35040
     setprop net.tcp.buffersize.gprs    4092,8760,11680,4096,8760,11680
 
-
-# Audio Tunning Files
-	chmod 0777 /system/etc/audio/stream_speaker.txt
-	chmod 0777 /system/etc/audio/stream_headset.txt
-	chmod 0777 /system/etc/audio/stream_earpiece.txt
-	chmod 0777 /system/etc/audio/situation.txt
-	chmod 0777 /system/etc/audio/aeqcoe.txt
-	chmod 0777 /system/etc/audio/soundbooster.txt
-	chmod 0777 /system/etc/audio/srstunning.txt
-	chmod 0777 /system/etc/audio/ArkamysTuning.txt
-
 # +++++++++++++++++++++++++++++++++++++++++++
 # for Bluetooth
     chown bluetooth bluetooth /sys/module/bluetooth_power/parameters/power
@@ -445,13 +431,16 @@ on boot
     chown system system /dev/ttygs0
     chown system system /dev/dun
     
- # +++++++++++++++++++++++++++++++++++++++++++
-
+# +++++++++++++++++++++++++++++++++++++++++++
 # create dummy file for test automation
     start create_dfta
     chmod 0777 /data/dfta
 
     class_start default
+# +++++++++++++++++++++++++++++++++++++++++++++
+# TMO LogMeIn
+    chmod 0644 /sys/bin/RescueServer
+    chmod 0644 /sys/bin/RescueStarter
 
 ## Daemon processes to be run by init.
 ##
@@ -675,3 +664,12 @@ service create_dfta dd if=/dev/zero of=/data/dfta bs=1 count=1
     user root
     oneshot
 
+service audiosh /system/bin/audiosh
+    oneshot
+
+# +++++++++++++++++++++++++++++++++++++++++++++
+# TMO LogMeIn
+service RescueStarter /system/bin/RescueStarter
+    user RescueStarter
+    group RescueStarter
+    oneshot
