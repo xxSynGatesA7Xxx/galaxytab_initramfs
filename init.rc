@@ -13,8 +13,9 @@ loglevel 3
     export ANDROID_DATA /data
 
     export INTERNAL_STORAGE /mnt/sdcard
-    export EXTERNAL_STORAGE /mnt/sdcard
-
+    export EXTERNAL_STORAGE /mnt/sdcard/external_sd
+    export OTG_STORAGE /mnt/sdcard/otg_disk
+    
     export ASEC_MOUNTPOINT /mnt/asec
 
     export BOOTCLASSPATH /system/framework/core.jar:/system/framework/ext.jar:/system/framework/framework.jar:/system/framework/android.policy.jar:/system/framework/services.jar
@@ -38,11 +39,7 @@ loglevel 3
 # create mountpoints
     mkdir /mnt 0775 root system
     mkdir /mnt/sdcard 0000 system system
-    
-    #P1_VZW, cache partition is moved to iNAND.
-    mkdir /mnt/cache 0770 system cache
-    mkdir /mnt/fota 0770 system cache    
-    
+
 # Create cgroup mount point for cpu accounting
     mkdir /acct
     mount cgroup none /acct cpuacct
@@ -114,9 +111,8 @@ loglevel 3
 # mount mtd partitions
     # Mount /system rw first to give the filesystem a chance to save a checkpoint
     #mount yaffs2 mtd@system /system
-    #mount rfs /dev/block/stl9 /system check=no
-    #mount rfs /dev/block/stl9 /system ro remount
-    mount rfs /dev/block/stl9 /system ro check=no
+    mount rfs /dev/block/stl9 /system check=no
+    mount rfs /dev/block/stl9 /system ro remount
     #mount yaffs2 mtd@system /system ro remount
 
     # We chown/chmod /data again so because mount is run as root + defaults
@@ -126,8 +122,6 @@ loglevel 3
 	#exec apply_system_policy /dev/block/stl10
     exec apply_disk_policy
 
-# SEC_INTERNAL_STORAGE
-# mount internal storage (moviNand or iNand)
     mkdir /data
     mount rfs /dev/block/mmcblk0p2 /data nosuid nodev check=no
     chown system system /data
@@ -168,16 +162,9 @@ loglevel 3
 
     # Same reason as /data above
     #mount yaffs2 mtd@cache /cache nosuid nodev
-    #P1_VZW
-    mkdir /cache
-    mount rfs /dev/block/mmcblk0p1 /cache nosuid nodev check=no
+    mount rfs /dev/block/stl11 /cache nosuid nodev check=no
     chown system cache /cache
     chmod 0770 /cache
-    
-    #P1_VZW, cache partition is moved to iNAND
-    mount rfs /dev/block/stl11 /mnt/cache nosuid nodev check=no
-    chown system cache /mnt/cache
-    chmod 0770 /mnt/cache
 
     # This may have been created by the recovery system with odd permissions
     chown system cache /cache/recovery
@@ -185,6 +172,9 @@ loglevel 3
 
     mount rfs /dev/block/stl3 /efs nosuid nodev check=no
 
+    mkdir /data/etc
+    chmod 0666 /data/etc
+	
     #chown system system /efs
     chown radio radio /efs
     chmod 0771 /efs
@@ -198,6 +188,14 @@ loglevel 3
     chmod 664 /dev/s3c2410_serial1
     mkdir /data/gps 771 system system
     chown system system /data/gps
+    chown root system /sys/class/sec/gps/GPS_PWR_EN/value
+    chmod 664 /sys/class/sec/gps/GPS_PWR_EN/value
+    chown root system /sys/class/gpio/gpio121/value
+    chmod 664 /sys/class/gpio/gpio121/value
+    chown root system /sys/class/gpio/gpio120/value
+    chmod 664 /sys/class/gpio/gpio120/value
+
+    
 # create basic filesystem structure
     mkdir /data/misc 01771 system misc
     mkdir /data/misc/bluetoothd 0770 bluetooth bluetooth
@@ -250,27 +248,14 @@ loglevel 3
     chown root root /cache/lost+found
     chmod 0770 /cache/lost+found
     
-    chown radio radio /dev/dpramerr
-    chown radio radio /dev/dpram0
-    chown radio radio /dev/dpram1
-    chown radio radio /dev/dpram2
-    chown radio radio /dev/onedram_rfs
-    chown radio radio /dev/multipdp
-
-    # CIQ
-    chown radio radio /dev/ttyTRFB0
-    chown system system /dev/ttyCIQ0
-    chmod 0777 /dev/ttyTRFB0
-    chmod 0777 /dev/ttyCIQ0
-
 # mount modules
-    insmod /lib/modules/dpram_vzw.ko
-#    insmod /lib/modules/multipdp.ko
-#    insmod /lib/modules/onedram.ko
-#    insmod /lib/modules/svnet.ko
-#    insmod /lib/modules/modemctl.ko
-#    insmod /lib/modules/storage.ko
-    
+# insmod /lib/modules/dpram.ko
+# insmod /lib/modules/multipdp.ko
+    insmod /lib/modules/onedram.ko
+    insmod /lib/modules/svnet.ko
+    insmod /lib/modules/modemctl.ko
+    insmod /lib/modules/storage.ko
+    insmod /lib/modules/bthid.ko
 
 # for Sensor HAL
 #    chown system system /dev/bma150
@@ -301,9 +286,9 @@ loglevel 3
     # Added for testing WMDRM and DIVX DRM
     mkdir /data/data/.drm/ 0777
     mkdir /data/data/.drm/.wmdrm 0777
-    mkdir /data/data/.drm/.divxdrm 0777
-    #mkdir /efs/.android 0777
-    
+    #mkdir /data/data/.drm/.divxdrm 0777
+    mkdir /efs/.android 0777
+        
     # Permission for WMDRM sample.hds file
     chmod 0777  /data/data/.drm/.wmdrm/sample.hds
 
@@ -417,16 +402,10 @@ on boot
     chown system system /sys/kernel/ipv4/tcp_rmem_max
     chown root radio /proc/cmdline
 
-# P1_VZW
-# FOTA
-    chmod 0777 /system/etc/install-recovery.sh
-#hwcodec tuning ( rakesh.gohel@samsung.com )
-    chmod 777 /dev/i2c-4
-
 # Define TCP buffer sizes for various networks
 #   ReadMin, ReadInitial, ReadMax, WriteMin, WriteInitial, WriteMax,
-    setprop net.tcp.buffersize.default 4096,87380,110208,4096,16384,110208
-    setprop net.tcp.buffersize.wifi    4095,65535,196608,4096,16384,110208
+    setprop net.tcp.buffersize.default 4096,87380,196608,4096,16384,110208
+    setprop net.tcp.buffersize.wifi    4095,87380,393216,4096,16384,110208
     setprop net.tcp.buffersize.umts    4094,87380,196608,4096,16384,110208
     setprop net.tcp.buffersize.edge    4093,26280,35040,4096,16384,35040
     setprop net.tcp.buffersize.gprs    4092,8760,11680,4096,8760,11680
@@ -465,7 +444,7 @@ on boot
 # for datarouter
     chown system system /dev/ttygs0
     chown system system /dev/dun
-            
+    
  # +++++++++++++++++++++++++++++++++++++++++++
 
 # create dummy file for test automation
@@ -480,10 +459,6 @@ service console /system/bin/sh
     user shell
     group shell system log
     console
-
-service console /system/bin/toolbox
-    user shell
-    group shell
 
 service playlogo /system/bin/playlogo
     user root
@@ -530,16 +505,16 @@ service netd /system/bin/netd
 
 service debuggerd /system/bin/debuggerd
 
-#service efs-daemon /system/bin/efsd
+# service efs-daemon /system/bin/efsd
 
 service ril-daemon /system/bin/rild
     socket rild stream 660 root radio
     socket rild-debug stream 660 radio system
     user root
-    group radio cache inet misc audio sdcard_rw log
+    group radio cache inet misc audio log
     
 service DR-deamon /system/bin/drexe
-	user root
+    user root
     group system radio inet net_raw
 	
 service mobex-daemon /system/bin/npsmobex
@@ -549,13 +524,6 @@ service mobex-daemon /system/bin/npsmobex
 service glgps /system/bin/gpsd/glgps_samsungJupiter -c /system/etc/jupiter.xml
     user system
     group system inet
-
-service pppd_cdma /system/bin/pppd_runner
-   user root
-   group radio cache inet misc system
-   disabled
-   oneshot
-
 
 service zygote /system/bin/app_process -Xzygote /system/bin --zygote --start-system-server
     socket zygote stream 666
@@ -666,14 +634,7 @@ service pbap /system/bin/sdptool add --channel=19 PBAP
 service installd /system/bin/installd
     socket installd stream 600 system system
 
-# P1_VZW
-#service flash_recovery /system/etc/install-recovery.sh
-#    oneshot
-
-#to update incremental image of recovery partition
-service flash_recovery /system/bin/sh /system/etc/install-recovery.sh
-    user root
-    console
+service flash_recovery /system/etc/install-recovery.sh
     oneshot
 
 service racoon /system/bin/racoon
