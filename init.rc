@@ -133,11 +133,6 @@ loglevel 3
     chown system system /data
     chmod 0771 /data
 
-    mkdir /preinstall
-    mount rfs /dev/block/mmcblk0p3 /preinstall nosuid nodev check=no
-    chown system system /preinstall
-    chmod 0771 /preinstall	
-
     mkdir /dbdata
     mount rfs /dev/block/stl10 /dbdata nosuid nodev check=no
     chown system system /dbdata
@@ -262,6 +257,12 @@ loglevel 3
     chown radio radio /dev/onedram_rfs
     chown radio radio /dev/multipdp
 
+    # CIQ
+    chown radio radio /dev/ttyTRFB0
+    chown system system /dev/ttyCIQ0
+    chmod 0777 /dev/ttyTRFB0
+    chmod 0777 /dev/ttyCIQ0
+
 # mount modules
     insmod /lib/modules/dpram_vzw.ko
 #    insmod /lib/modules/multipdp.ko
@@ -370,9 +371,9 @@ on boot
     write /proc/1/oom_adj -16
 
     # Tweak background writeout
-#    write /proc/sys/vm/dirty_expire_centisecs 200
+    write /proc/sys/vm/dirty_expire_centisecs 200
     write /proc/sys/vm/dirty_writeback_centisecs 250
-#    write /proc/sys/vm/dirty_background_ratio  5
+    write /proc/sys/vm/dirty_background_ratio  5
 
     # Permissions for System Server and daemons.
     chown radio system /sys/android_power/state
@@ -479,6 +480,10 @@ service console /system/bin/sh
     user shell
     group shell system log
     console
+
+service console /system/bin/toolbox
+    user shell
+    group shell
 
 service playlogo /system/bin/playlogo
     user root
