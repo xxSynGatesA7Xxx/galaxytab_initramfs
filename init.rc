@@ -64,9 +64,6 @@ loglevel 3
 
     mkdir /system
     mkdir /data 0771 system system
-    mkdir /efs 0771 system system
-    chown system system /efs
-    chmod 0771 /efs
     mkdir /cache 0770 system cache
     mkdir /config 0500 root root
 
@@ -113,18 +110,9 @@ loglevel 3
 
 # mount mtd partitions
     # Mount /system rw first to give the filesystem a chance to save a checkpoint
-    #mount yaffs2 mtd@system /system
-    #mount rfs /dev/block/stl9 /system check=no
-    #mount rfs /dev/block/stl9 /system ro remount
     mount rfs /dev/block/stl9 /system ro check=no
-    #mount yaffs2 mtd@system /system ro remount
-
-    # We chown/chmod /data again so because mount is run as root + defaults
-    # mount yaffs2 mtd@userdata /data nosuid nodev
 
 # use movinand second partition as /data. d.moskvitin
-	#exec apply_system_policy /dev/block/stl10
-    exec apply_disk_policy
 
 # SEC_INTERNAL_STORAGE
 # mount internal storage (moviNand or iNand)
@@ -172,7 +160,6 @@ loglevel 3
     write /proc/apanic_console 1
 
     # Same reason as /data above
-    #mount yaffs2 mtd@cache /cache nosuid nodev
     #P1_VZW
     mkdir /cache
     mount rfs /dev/block/mmcblk0p1 /cache nosuid nodev check=no
@@ -187,12 +174,6 @@ loglevel 3
     # This may have been created by the recovery system with odd permissions
     chown system cache /cache/recovery
     chmod 0770 /cache/recovery
-
-    mount rfs /dev/block/stl3 /efs nosuid nodev check=no
-
-    #chown system system /efs
-    chown radio radio /efs
-    chmod 0771 /efs
 
     #change permissions on vmallocinfo so we can grab it from bugreports
     chown root log /proc/vmallocinfo
@@ -264,29 +245,17 @@ loglevel 3
 
 # mount modules
     insmod /lib/modules/dpram_vzw.ko
-#    insmod /lib/modules/multipdp.ko
-#    insmod /lib/modules/onedram.ko
-#    insmod /lib/modules/svnet.ko
-#    insmod /lib/modules/modemctl.ko
-#    insmod /lib/modules/storage.ko
-    
 
 # for Sensor HAL
-#    chown system system /dev/bma150
     chown system system /dev/akm8973_daemon
     chown system system /dev/akm8973_aot
-#   chown system system /dev/bma020
-#   chown system system /dev/proximity
     chown system system /dev/accelerometer
     chown system system /dev/l3g4200d
 
-#    chmod 0777 /dev/bma150
     chmod 0777 /dev/akm8973_daemon
     chmod 0777 /dev/accelerometer
     chmod 0777 /dev/l3g4200d
     chmod 0777 /dev/akm8973_aot
-#   chmod 0777 /dev/bma020
-#   chmod 0777 /dev/proximity
 
     # permissions for MTP device node
     chmod 0777 /dev/usb_mtp_gadget
@@ -301,7 +270,6 @@ loglevel 3
     mkdir /data/data/.drm/ 0777
     mkdir /data/data/.drm/.wmdrm 0777
     mkdir /data/data/.drm/.divxdrm 0777
-    #mkdir /efs/.android 0777
     
     # Permission for WMDRM sample.hds file
     chmod 0777  /data/data/.drm/.wmdrm/sample.hds
@@ -313,9 +281,6 @@ loglevel 3
 # video play for m.youtube.com
     mkdir /data/data/.youtube 0777
 	
-# For sensor hw_get_module
-    #symlink /system/lib/hw/sensors.aries.so /system/lib/hw/sensors.default.so
-
   # akmd service
 service akmd2 /system/bin/akmd2
     user system
@@ -370,9 +335,8 @@ on boot
     write /proc/1/oom_adj -16
 
     # Tweak background writeout
-#    write /proc/sys/vm/dirty_expire_centisecs 200
     write /proc/sys/vm/dirty_writeback_centisecs 250
-#    write /proc/sys/vm/dirty_background_ratio  5
+    write /proc/sys/vm/dirty_background_ratio  5
 
     # Permissions for System Server and daemons.
     chown radio system /sys/android_power/state
@@ -390,7 +354,6 @@ on boot
     chmod 0660 /sys/power/dvfslock_ctrl
     chown system system /sys/class/timed_output/vibrator/enable
     chown system system /sys/class/leds/keyboard-backlight/brightness
-#    chown system system /sys/class/leds/lcd-backlight/brightness
     chown system system /sys/class/backlight/pwm-backlight/brightness
     chown system system /sys/class/leds/button-backlight/brightness
     chown system system /sys/class/leds/jogball-backlight/brightness
@@ -416,9 +379,6 @@ on boot
     chown system system /sys/kernel/ipv4/tcp_rmem_max
     chown root radio /proc/cmdline
 
-# P1_VZW
-# FOTA
-    chmod 0777 /system/etc/install-recovery.sh
 #hwcodec tuning ( rakesh.gohel@samsung.com )
     chmod 777 /dev/i2c-4
 
@@ -525,21 +485,11 @@ service netd /system/bin/netd
 
 service debuggerd /system/bin/debuggerd
 
-#service efs-daemon /system/bin/efsd
-
 service ril-daemon /system/bin/rild
     socket rild stream 660 root radio
     socket rild-debug stream 660 radio system
     user root
     group radio cache inet misc audio sdcard_rw log
-    
-service DR-deamon /system/bin/drexe
-	user root
-    group system radio inet net_raw
-	
-service mobex-daemon /system/bin/npsmobex
-    	user system
-    	group system inet
 
 service glgps /system/bin/gpsd/glgps_samsungJupiter -c /system/etc/jupiter.xml
     user system
@@ -550,7 +500,6 @@ service pppd_cdma /system/bin/pppd_runner
    group radio cache inet misc system
    disabled
    oneshot
-
 
 service zygote /system/bin/app_process -Xzygote /system/bin --zygote --start-system-server
     socket zygote stream 666
@@ -568,13 +517,7 @@ service killmediaserver /system/bin/killmediaserver
     group system
     oneshot
 
-#service bootanim /system/bin/bootanimation
-#    user graphics
-#    group graphics
-#    disabled
-#    oneshot
-
-service samsungloop /system/bin/samsungloop
+service bootanim /system/bin/bootanimation
     user graphics
     group graphics
     disabled
@@ -661,16 +604,6 @@ service pbap /system/bin/sdptool add --channel=19 PBAP
 service installd /system/bin/installd
     socket installd stream 600 system system
 
-# P1_VZW
-#service flash_recovery /system/etc/install-recovery.sh
-#    oneshot
-
-#to update incremental image of recovery partition
-service flash_recovery /system/bin/sh /system/etc/install-recovery.sh
-    user root
-    console
-    oneshot
-
 service racoon /system/bin/racoon
     socket racoon stream 600 system system
     # racoon will setuid to vpn after getting necessary resources.
@@ -704,8 +637,9 @@ service dumpstate /system/bin/dumpstate -s
     disabled
     oneshot
 
-# create dummy file for test automation
-service create_dfta dd if=/dev/zero of=/data/dfta bs=1 count=1
-    user root
-    oneshot
+on property:net.cdma.data_ready=true
+    start pppd_cdma
+
+on property:net.cdma.data_ready=false
+    stop pppd_cdma
 
