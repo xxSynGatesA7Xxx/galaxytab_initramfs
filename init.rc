@@ -264,12 +264,8 @@ loglevel 3
 
 # mount modules
     insmod /lib/modules/dpram_vzw.ko
-#    insmod /lib/modules/multipdp.ko
-#    insmod /lib/modules/onedram.ko
-#    insmod /lib/modules/svnet.ko
-#    insmod /lib/modules/modemctl.ko
-#    insmod /lib/modules/storage.ko
-    
+    insmod /lib/modules/tun.ko
+    insmod /lib/modules/cifs.ko    
 
 # for Sensor HAL
 #    chown system system /dev/bma150
